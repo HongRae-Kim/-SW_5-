@@ -1,9 +1,7 @@
 import streamlit as st
 from urllib.parse import quote
 
-KAKAO_API_KEY = "94725ef93944f848cca35aa808d1deee"
-
-# HTML을 렌더링하기 위한 기본 템플릿
+# Kakao 지도 API를 사용하여 HTML iframe 생성
 def generate_map_iframe_html(query, width, height):
     encoded_query = quote(query)
     return f"""
@@ -18,36 +16,54 @@ def generate_map_iframe_html(query, width, height):
 
 # Streamlit 앱 구현
 def main():
-    # 화면 너비 제한 해제
+    # 화면 너비 설정
     st.set_page_config(layout="wide")
 
-    st.title("여행 가이드 챗봇")
-    st.write("검색하고자 하는 장소를 입력하세요.")
+    # 앱 제목 및 설명
+    st.title("🗺️ 여행 가이드 챗봇")
+    st.write("검색하고자 하는 장소를 입력하세요. 현재는 **춘천 지역**만 지원합니다.")
 
-    user_input = st.text_input("질문을 입력하세요:")
+    # 사용자 입력
+    user_input = st.text_input("검색할 장소를 입력하세요:", placeholder="예: 춘천 카페")
 
+    # 기본 지도 HTML
+    map_html = None
     if user_input:
         if "춘천" in user_input:
             query = user_input
             map_html = generate_map_iframe_html(query, "100%", "600px")
-            # 왼쪽에 버튼, 중간에 지도, 우측에 일정 표시
-            col1, col2, col3 = st.columns([1, 5, 3])
-            with col1:
-                if st.button("식당"):
-                    query = user_input.replace(user_input, "춘천 식당")
-                    map_html = generate_map_iframe_html(query, "100%", "600px")
-                if st.button("관광지"):
-                    query = user_input.replace(user_input, "춘천 관광지")
-                    map_html = generate_map_iframe_html(query, "100%", "600px")
-                if st.button("숙소"):
-                    query = user_input.replace(user_input, "춘천 숙소")
-                    map_html = generate_map_iframe_html(query, "100%", "600px")
-            with col2:
-                st.components.v1.html(map_html, height=600)
-            with col3:
-                st.write("여기에 일정 챗봇으로 출력")
         else:
-            st.warning("춘천 지역만 가능합니다")
+            st.warning("현재는 춘천 지역만 지원합니다. 검색어에 '춘천'을 포함해주세요.")
 
+    # 레이아웃 설정: 사이드바, 지도, 일정
+    col1, col2 = st.columns([5, 3])
+
+    # 사이드바: 빠른 탐색 버튼
+    with st.sidebar:
+        st.header("🔍 빠른 탐색")
+        st.write("아래 버튼을 눌러 원하는 정보를 바로 볼 수 있습니다")
+        if st.button("춘천 식당"):
+            query = "춘천 식당"
+            map_html = generate_map_iframe_html(query, "100%", "600px")
+        if st.button("춘천 관광지"):
+            query = "춘천 관광지"
+            map_html = generate_map_iframe_html(query, "100%", "600px")
+        if st.button("춘천 숙소"):
+            query = "춘천 숙소"
+            map_html = generate_map_iframe_html(query, "100%", "600px")
+
+    # 지도 출력
+    with col1:
+        if map_html:
+            st.components.v1.html(map_html, height=600)
+        else:
+            st.info("검색 결과가 여기에 표시됩니다.")
+
+    # 일정 관련 콘텐츠 출력
+    with col2:
+        st.subheader("📅 추천 일정")
+        st.write("chatBot으로 일정 출력하기")
+
+# 메인 실행
 if __name__ == "__main__":
     main()
