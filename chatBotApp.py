@@ -1,7 +1,11 @@
 import streamlit as st
 from urllib.parse import quote
 
+
 # Kakao 지도 API를 사용하여 HTML iframe 생성
+KAKAO_API_KEY = "Your_API_KEY"
+
+# HTML을 렌더링하기 위한 기본 템플릿
 def generate_map_iframe_html(query, width, height):
     encoded_query = quote(query)
     return f"""
