@@ -1,7 +1,7 @@
 import streamlit as st
 from urllib.parse import quote
 
-KAKAO_API_KEY = "94725ef93944f848cca35aa808d1deee"
+KAKAO_API_KEY = "Your_API_KEY"
 
 # HTML을 렌더링하기 위한 기본 템플릿
 def generate_map_iframe_html(query, width, height):
