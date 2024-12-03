@@ -9,6 +9,6 @@ def navigate_to(page_name):
 if st.session_state.page == "Home":
     import Home
     Home.main()
-elif st.session_state.page == "ChatBotApp":
-    import ChatBotApp
-    ChatBotApp.main()
+elif st.session_state.page == "chatBotApp":
+    import chatBotApp
+    chatBotApp.main()
