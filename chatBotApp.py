@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 KAKAO_API_KEY = "Your_API_KEY"
 
 # OpenWeather API Key
-OPENWEATHER_API_KEY = "ed8a40d22e5db3f3ee51b6a0dcdf6d42"
+OPENWEATHER_API_KEY = "OPENWEATHER_API_KEY"
 
 # HTML을 렌더링하기 위한 기본 템플릿
 def generate_map_iframe_html(query, width, height):
