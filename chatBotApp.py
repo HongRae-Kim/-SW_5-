@@ -107,7 +107,7 @@ def main():
                     "--hover-color": "#AAAAFF",
                 },
                 "nav-link-selected": {
-                    "background-color": "#A9A9A9",2
+                    "background-color": "#A9A9A9",
                 },
             },
         )
