@@ -5,10 +5,10 @@ import requests
 from datetime import datetime, timedelta
 
 # Kakao 지도 API를 사용하여 HTML iframe 생성
-KAKAO_API_KEY = "Your_API_KEY"
+KAKAO_API_KEY = "your_kakao_api_key"
 
 # OpenWeather API Key
-OPENWEATHER_API_KEY = "07d909e7cd98670d2103f1ddfb72c1bc"
+OPENWEATHER_API_KEY = "your_openweather_api_key"
 
 
 # HTML을 렌더링하기 위한 기본 템플릿
