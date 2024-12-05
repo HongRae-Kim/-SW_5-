@@ -1,6 +1,6 @@
 import streamlit as st
-from urllib.parse import quote
 import requests
+from urllib.parse import quote
 from datetime import datetime, timedelta
 
 # Kakao 지도 API를 사용하여 HTML iframe 생성
@@ -70,6 +70,7 @@ def main():
     st.title("🗺️ 여행 가이드 챗봇")
     st.write("검색하고자 하는 장소를 입력하세요. 현재는 **춘천 지역**만 지원합니다.")
 
+
     # 검색어 입력
     user_input = st.text_input("검색할 장소를 입력하세요:", placeholder="예: 춘천 카페")
 
@@ -85,11 +86,10 @@ def main():
     # 레이아웃 설정: 지도, 날씨 예보, 추천 일정
     col1, col2 = st.columns([5, 3])
 
+    # 사이드바: 빠른 탐색 버튼
     with st.sidebar:
         st.header("🔍 빠른 탐색")
         st.write("아래 버튼을 눌러 원하는 정보를 바로 볼 수 있습니다")
-
-        # 사이드바 버튼 클릭 후 지도 HTML 업데이트
         if st.button("춘천 식당"):
             query = "춘천 식당"
             map_html = generate_map_iframe_html(query, "100%", "600px")
