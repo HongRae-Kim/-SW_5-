@@ -36,7 +36,7 @@ def generate_map_iframe_html(query, width, height):
 def get_weather_forecast(city):
     url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={OPENWEATHER_API_KEY}&units=metric&lang=kr"
     response = requests.get(url)
-
+    
     if response.status_code == 200:
         data = response.json()
         forecast_data = []
@@ -286,7 +286,7 @@ def main():
                 },
                 "nav-link-selected": {
                     "background-color": "#A9A9A9",
-                    },
+                },
             },
         )
 
@@ -353,7 +353,7 @@ def main():
             st.components.v1.html(map_html, height=550, width=900)
         else:
             st.info("지도가 여기에 표시됩니다.")
-
+            
         # 날씨 정보 출력
         forecast_data, daily_min_max = get_weather_forecast("Chuncheon")
         if forecast_data:
