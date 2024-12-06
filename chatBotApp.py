@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 # 모델 이름, Ollama 로컬 서버 실행되고 있어야 함
 model_name = "hf.co/MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M"
 
-# 공공데이터포털 API KEY
+# 공공데이터포털 API
 PUBLIC_DATA_SERVICE_KEY = "PUBLIC_DATA_SERVICE_KEY"
 
 # Kakao 지도 API를 사용하여 HTML iframe 생성
@@ -36,7 +36,7 @@ def generate_map_iframe_html(query, width, height):
 def get_weather_forecast(city):
     url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={OPENWEATHER_API_KEY}&units=metric&lang=kr"
     response = requests.get(url)
-    
+
     if response.status_code == 200:
         data = response.json()
         forecast_data = []
@@ -75,14 +75,14 @@ def get_weather_forecast(city):
 def get_restaurant_info():
     base_url = "BASE_URL"
     endpoint = "ENDPOINT"
-    url = base_url + endpoint
+    url = f"{base_url}{endpoint}"
 
     # 파라미터 설정
     params = {
         "page": 1,
         "perPage": 10,
         "returnType": "JSON",
-        "serviceKey": PUBLIC_DATA_SERVICE_KEY
+        "serviceKey": PUBLIC_DATA_SERVICE_KEY 
     }
     response = requests.get(url, params=params)
 
@@ -109,7 +109,7 @@ def get_restaurant_info():
 def get_accommodation_info():
     base_url = "BASE_URL"
     endpoint = "ENDPOINT"
-    url = base_url + endpoint
+    url = f"{base_url}{endpoint}"
 
     params = {
         "page": 1,
@@ -117,6 +117,7 @@ def get_accommodation_info():
         "returnType": "JSON",
         "serviceKey": PUBLIC_DATA_SERVICE_KEY  
     }
+
     response = requests.get(url, params=params)
 
     if response.status_code == 200:
@@ -137,42 +138,50 @@ def get_accommodation_info():
         st.error(f"API 요청에 실패했습니다: 상태 코드 {response.status_code}")
         return None
 
-# 상황별 프롬프트 설정 로직에 API 결과를 반영 
-def generate_prompt(restaurants=None, accommodations=None):
-    api_result = ""
+# 공공데이터포털 API 호출하여 관광지 정보를 가져오는 함수
+def get_thematic_tour_info():
+    base_url = "BASE_URL"
+    endpoint = "ENDPOINT"
+    url = f"{base_url}{endpoint}"
 
-    if restaurants:
-        api_result += "\n[맛집 정보]\n"
-        for res in restaurants:
-            api_result += f"업소명: {res['업소명']}, 위치: {res['소재지']}, 음식 유형: {res['음식의유형']}, 추천 메뉴: {res['추천메뉴']}\n"
-    
-    if accommodations:
-        api_result += "\n[숙박업소 정보]\n"
-        for acc in accommodations:
-            api_result += f"업소명: {acc['업소명']}, 위치: {acc['소재지']}, 업태: {acc['업태']}\n"
+    params = {
+        "pageNo": 1,
+        "perPage": 10,
+        "returnType": "JSON",
+        "serviceKey": PUBLIC_DATA_SERVICE_KEY 
+    }
 
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()
 
-    # 프롬프트 엔지니어링 
-    prompt = f"""
-    다음은 춘천의 인기 음식점에 대한 정보입니다. {api_result}
-    위 내용을 사용하여 당신은 춘천 여행 가이드에 대한 정보를 사용자에게 소개해야 합니다.
-    
-    예시:
-    1. 맛집 이름: 방문할 맛집을 기재합니다.
-    2. 위치: 장소를 방문할 적절한 시간을 제시합니다.
-    3. 음식 유형: 해당 음식의 종류를 간단하게 설명해주세요.
-    4. 추천 메뉴: 추천하는 메뉴를 설명해주세요.
+        if response.status_code == 200:
+            response_data = response.json()
+            tour_list = []
 
-    5. 숙박업소 이름: 숙박할 수 있는 업소명을 기재합니다.
-    6. 위치: 숙소 위치를 설명합니다.
-    7. 분류: 제공되는 숙박업소가 관광호텔, 여관업, 여인숙업, 일반호텔, 숙박업 기타 등 어디에 해당되는지 기재합니다.
+            for item in response_data.get("data", []):
+                tour_info = {
+                    "테마": item.get("테마"),
+                    "요약": item.get("요약"),
+                    "코스정보": item.get("코스정보"),
+                }
+                tour_list.append(tour_info)
 
-    춘천의 유명한 맛집들을 위치와 추천 메뉴를 고려하여 추천해주세요.
-    """
-    return prompt 
+            selected_tours = random.sample(tour_list, min(1, len(tour_list)))
+
+            return selected_tours
+        
+        else:
+            print(f"API 요청에 실패했습니다: 상태 코드 {response.status_code}")
+            return None 
+        
+    except requests.exceptions.RequestsDependencyWarning as err:
+        print(f"API 요청 오류 발생: {err}") 
+        return None
 
 def call_model(prompt):
     try:
+        # Ollama 모델 호출 
         response_stream = ollama.chat(
             model=model_name,
             messages=[
@@ -181,23 +190,25 @@ def call_model(prompt):
                     "content": prompt,
                 },
             ],
-            stream=True # 스트리밍 활성화 
+            stream=True  # 스트리밍 활성화
         )
 
+        # 스트리밍된 응답을 받아서 실시간으로 업데이트
         full_response = ""
-        response_placeholder = st.empty()
+        response_placeholder = st.empty()  # 이 부분에서 Streamlit에 출력할 빈 공간을 준비
         for chunk in response_stream:
             if 'message' in chunk:
                 full_response += chunk['message']['content']
-                response_placeholder.text(full_response)
+                response_placeholder.text(full_response)  # 실시간 업데이트
         st.success("모델 응답 완료")
     except Exception as e:
-        print(f"모델 호출 오류가 발생했습니다: {e}")
+        st.error(f"모델 호출 오류가 발생했습니다: {e}")       
 
-def generate_prompt(restaurants=None, accommodations=None):
+
+def generate_prompt(restaurants=None, accommodations=None, tourist=None):
     api_result = ""
 
-    # 맛집 정보에 대한 요청이 들어오면 프롬프트 생성 
+    # 맛집 정보가 있는 경우 프롬프트에 맛집 정보만 포함
     if restaurants:
         api_result += "\n[맛집 정보]\n"
         for res in restaurants:
@@ -216,8 +227,8 @@ def generate_prompt(restaurants=None, accommodations=None):
         춘천의 유명한 맛집들을 위치와 추천 메뉴를 고려하여 추천해주세요.
         """
         return prompt
-    
-    # 숙박업소 정보에 대한 요청이 들어오면 프롬프트 생성
+
+    # 숙박업소 정보가 있는 경우 프롬프트에 숙박업소 정보만 포함
     elif accommodations:
         api_result += "\n[숙박업소 정보]\n"
         for acc in accommodations:
@@ -235,8 +246,25 @@ def generate_prompt(restaurants=None, accommodations=None):
         춘천의 숙박업소들을 추천해 주세요.
         """
         return prompt
-    
-    # 아무 정보도 없으면 빈 프롬프트 반환 
+
+    elif tourist:
+        api_result += "\n[관광지 정보]\n"
+        for tour in tourist:
+            api_result += f"테마 {tour['테마']}, 요약: {tour['요약']}, 코스정보: {tour['코스정보']}\n"
+            
+        prompt = f"""
+        다음은 춘천의 관광지에 대한 정보입니다. {api_result}
+        위 내용을 사용하여 당신은 춘천 관광 가이드에 대한 정보를 사용자에게 소개해야 합니다.
+
+        예시:
+        1. 코스정보: 간단하게 정보를 소개합니다.
+        2. 소개: 제공되는 코스정보에 대해서 소개합니다.
+        3. 추천: 누구와 함께 즐겨야하는지에 대한 정보를 기재합니다.
+
+        춘천의 유명한 관광지를 추천해 주세요.
+        """
+        return prompt
+
     else:
         return "사용 가능한 정보가 없습니다. 적절한 데이터를 제공해주세요."
 
@@ -286,7 +314,7 @@ def main():
                 },
                 "nav-link-selected": {
                     "background-color": "#A9A9A9",
-                },
+                    },
             },
         )
 
@@ -300,60 +328,57 @@ def main():
     # Layout: Columns for map and weather
     col1, col2 = st.columns([4, 3])
 
-    # 추천 일정 출력 (col2)
+    # 추천 일정 출력
     with col2:
         st.subheader("📅 추천 일정")
         user_input = st.text_input("검색할 장소를 입력하세요:", placeholder="예: 춘천 식당, 춘천 관광지 ...")
 
+        # 사용자 입력에 따른 추천 일정 생성 
         response_placeholder = st.empty()
 
         # 정규식을 사용하여 사용자 입력 패턴 매칭 
-        if re.search(r"(춘천).*?(식당|맛집|숙소)", user_input, re.IGNORECASE) or "식당" in menu or "숙소" in menu:
-            try:
-                # 맛집 정보, 숙박업소 정보 가져오기 
+        try:
+            #  "식당" 또는 "맛집"과 관련된 검색을 했을 때
+            if re.search(r"(춘천).*?(식당|맛집)", user_input, re.IGNORECASE) or "식당" in menu:
+                # 맛집 정보 가져오기
                 restaurants = get_restaurant_info()
-                accommodations = get_accommodation_info()
-
-                if restaurants or accommodations:
-                    prompt = generate_prompt(restaurants=restaurants, accommodations=accommodations)
-
-                    # Ollama 모델 호출 
-                    response_stream = ollama.chat(
-                        model=model_name,
-                        messages=[
-                            {
-                                "role": "user",
-                                "content": prompt,
-                            },
-                        ],
-                        stream=True  # 스트리밍 활성화
-                    )
-
-                    # 스트리밍된 응답을 받아서 실시간으로 업데이트
-                    full_response = ""
-                    for chunk in response_stream:
-                        if 'message' in chunk:
-                            full_response += chunk['message']['content']
-                            response_placeholder.text(full_response) # 텍스트로 출력 
-                    st.success("모델 응답 완료")
+                if restaurants:
+                    prompt = generate_prompt(restaurants=restaurants)
+                    call_model(prompt)
                 else:
-                    st.warning("정보를 가져올 수 없습니다.")
-            except Exception as e:
-                st.error(f"오류가 발생했습니다: {e}")
+                    st.warning("맛집 정보를 가져올 수 없습니다.")
 
-        elif re.search(r"(춘천).*?(관광지)", user_input, re.IGNORECASE) or "관광지" in menu:
-            # 관광지 관련된 입력 처리
-            st.info("관광지 관련 정보를 준비 중입니다.")
-        else:
-            st.write("chatBot이 일정을 출력해줄겁니다.")
+            # "숙소"와 관련된 검색을 했을 때
+            elif re.search(r"(춘천).*?(숙소)", user_input, re.IGNORECASE) or "숙소" in menu:
+                # 숙소 정보 가져오기
+                accommodations = get_accommodation_info()
+                if accommodations:
+                    prompt = generate_prompt(accommodations=accommodations)
+                    call_model(prompt)
+                else:
+                    st.warning("숙소 정보를 가져올 수 없습니다.")
+
+            # "관광지"와 관련된 검색을 했을 때
+            elif re.search(r"(춘천).*?(관광지)", user_input, re.IGNORECASE) or "관광지" in menu:
+                tourist = get_thematic_tour_info()
+                if tourist:
+                    prompt = generate_prompt(tourist=tourist)
+                    call_model(prompt)
+                else:
+                    st.warning("관광지 정보를 가져올 수 없습니다.")
+            else:
+                st.write("chatBot이 일정을 출력해줄겁니다.")
+
+        except Exception as e:
+            st.error(f"오류가 발생했습니다: {e}")
 
     # 지도 및 날씨 정보 출력 (col1)
     with col1:
         if map_html:
-            st.components.v1.html(map_html, height=550, width=900)
+            st.components.v1.html(map_html, height=550, width=820)
         else:
             st.info("지도가 여기에 표시됩니다.")
-            
+
         # 날씨 정보 출력
         forecast_data, daily_min_max = get_weather_forecast("Chuncheon")
         if forecast_data:
