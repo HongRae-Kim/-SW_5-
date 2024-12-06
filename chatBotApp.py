@@ -2,7 +2,7 @@ import streamlit as st
 import ollama
 import re
 import requests
-import urllib.parse
+import random
 from streamlit_option_menu import option_menu
 from urllib.parse import quote
 from datetime import datetime, timedelta
@@ -10,8 +10,8 @@ from datetime import datetime, timedelta
 # 모델 이름, Ollama 로컬 서버 실행되고 있어야 함
 model_name = "hf.co/MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M"
 
-# 공공데이터포털 API KEY, 음식점 
-PUBLIC_DATA_SERVICE_KEY = "acV+BKrGo2bkYzStq90pG+G1uma95W5/awstYhpC/y2GRwoRj7Hj5ZFArwD5ZHqaaYzFtlIYNB6XC0DM6+anxA=="
+# 공공데이터포털 API KEY
+PUBLIC_DATA_SERVICE_KEY = "PUBLIC_DATA_SERVICE_KEY"
 
 # Kakao 지도 API를 사용하여 HTML iframe 생성
 KAKAO_API_KEY = "your_kakao_api_key"
@@ -73,28 +73,20 @@ def get_weather_forecast(city):
 
 # 공공데이터포털 API 호출하여 맛집 정보를 가져오는 함수
 def get_restaurant_info():
-    # Base URL 및 엔드포인트 설정
-    base_url = "https://api.odcloud.kr/api"
-    endpoint = "/15050522/v1/uddi:4c4692a3-f748-48b1-bb47-9c121b60445f"
+    base_url = "BASE_URL"
+    endpoint = "ENDPOINT"
     url = base_url + endpoint
 
-    # 인증키 설정
-    # service_key = urllib.parse.unquote(PUBLIC_DATA_SERVICE_KEY)
-
-    # 쿼리 파라미터 설정
+    # 파라미터 설정
     params = {
         "page": 1,
         "perPage": 10,
         "returnType": "JSON",
-        "serviceKey": PUBLIC_DATA_SERVICE_KEY  # 인증키
+        "serviceKey": PUBLIC_DATA_SERVICE_KEY
     }
-
-    # GET 요청 보내기
     response = requests.get(url, params=params)
 
-    # 응답 확인
     if response.status_code == 200:
-        # JSON 형태로 응답 파싱 
         response_data = response.json()
         restaurant_list = []
 
@@ -107,16 +99,58 @@ def get_restaurant_info():
             }
             restaurant_list.append(restaurant_info)
 
-        return restaurant_list
+        return random.sample(restaurant_list, min(4, len(restaurant_list)))
+    
+    else:
+        st.error(f"API 요청에 실패했습니다: 상태 코드 {response.status_code}")
+        return None
+    
+# 공공데이터포털 API 호출하여 숙박업소 정보를 가져오는 함수
+def get_accommodation_info():
+    base_url = "BASE_URL"
+    endpoint = "ENDPOINT"
+    url = base_url + endpoint
+
+    params = {
+        "page": 1,
+        "perPage": 10,
+        "returnType": "JSON",
+        "serviceKey": PUBLIC_DATA_SERVICE_KEY  
+    }
+    response = requests.get(url, params=params)
+
+    if response.status_code == 200:
+        response_data = response.json()
+        accommodation_list = []
+
+        for item in response_data.get("data", []):
+            accommodation_info = {
+                "업소명": item.get("업소명"),
+                "소재지": item.get("소재지도로명주소"),
+                "업태": item.get("업태"),
+            }
+            accommodation_list.append(accommodation_info)
+
+        return random.sample(accommodation_list, min(4, len(accommodation_list)))
+    
     else:
         st.error(f"API 요청에 실패했습니다: 상태 코드 {response.status_code}")
         return None
 
 # 상황별 프롬프트 설정 로직에 API 결과를 반영 
-def generate_prompt(restaurants):
+def generate_prompt(restaurants=None, accommodations=None):
     api_result = ""
-    for res in restaurants:
-        api_result += f"업소명: {res['업소명']}, 위치: {res['소재지']}, 음식 유형: {res['음식의유형']}, 추천 메뉴: {res['추천메뉴']}\n"
+
+    if restaurants:
+        api_result += "\n[맛집 정보]\n"
+        for res in restaurants:
+            api_result += f"업소명: {res['업소명']}, 위치: {res['소재지']}, 음식 유형: {res['음식의유형']}, 추천 메뉴: {res['추천메뉴']}\n"
+    
+    if accommodations:
+        api_result += "\n[숙박업소 정보]\n"
+        for acc in accommodations:
+            api_result += f"업소명: {acc['업소명']}, 위치: {acc['소재지']}, 업태: {acc['업태']}\n"
+
 
     # 프롬프트 엔지니어링 
     prompt = f"""
@@ -129,9 +163,82 @@ def generate_prompt(restaurants):
     3. 음식 유형: 해당 음식의 종류를 간단하게 설명해주세요.
     4. 추천 메뉴: 추천하는 메뉴를 설명해주세요.
 
+    5. 숙박업소 이름: 숙박할 수 있는 업소명을 기재합니다.
+    6. 위치: 숙소 위치를 설명합니다.
+    7. 분류: 제공되는 숙박업소가 관광호텔, 여관업, 여인숙업, 일반호텔, 숙박업 기타 등 어디에 해당되는지 기재합니다.
+
     춘천의 유명한 맛집들을 위치와 추천 메뉴를 고려하여 추천해주세요.
     """
     return prompt 
+
+def call_model(prompt):
+    try:
+        response_stream = ollama.chat(
+            model=model_name,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt,
+                },
+            ],
+            stream=True # 스트리밍 활성화 
+        )
+
+        full_response = ""
+        response_placeholder = st.empty()
+        for chunk in response_stream:
+            if 'message' in chunk:
+                full_response += chunk['message']['content']
+                response_placeholder.text(full_response)
+        st.success("모델 응답 완료")
+    except Exception as e:
+        print(f"모델 호출 오류가 발생했습니다: {e}")
+
+def generate_prompt(restaurants=None, accommodations=None):
+    api_result = ""
+
+    # 맛집 정보에 대한 요청이 들어오면 프롬프트 생성 
+    if restaurants:
+        api_result += "\n[맛집 정보]\n"
+        for res in restaurants:
+            api_result += f"업소명: {res['업소명']}, 위치: {res['소재지']}, 음식 유형: {res['음식의유형']}, 추천 메뉴: {res['추천메뉴']}\n"
+        
+        prompt = f"""
+        다음은 춘천의 인기 맛집에 대한 정보입니다. {api_result}
+        위 내용을 사용하여 당신은 춘천 맛집 가이드에 대한 정보를 사용자에게 소개해야 합니다.
+
+        예시:
+        1. 맛집 이름: 방문할 맛집을 기재합니다.
+        2. 위치: 장소를 방문할 적절한 시간을 제시합니다.
+        3. 음식 유형: 해당 음식의 종류를 간단하게 설명해주세요.
+        4. 추천 메뉴: 추천하는 메뉴를 설명해주세요.
+
+        춘천의 유명한 맛집들을 위치와 추천 메뉴를 고려하여 추천해주세요.
+        """
+        return prompt
+    
+    # 숙박업소 정보에 대한 요청이 들어오면 프롬프트 생성
+    elif accommodations:
+        api_result += "\n[숙박업소 정보]\n"
+        for acc in accommodations:
+            api_result += f"업소명: {acc['업소명']}, 위치: {acc['소재지']}, 업태: {acc['업태']}\n"
+        
+        prompt = f"""
+        다음은 춘천의 인기 숙박업소에 대한 정보입니다. {api_result}
+        위 내용을 사용하여 당신은 춘천 여행 가이드에서 숙박에 대한 정보를 사용자에게 소개해야 합니다.
+
+        예시:
+        1. 숙박업소 이름: 숙박할 수 있는 업소명을 기재합니다.
+        2. 위치: 숙소 위치를 설명합니다.
+        3. 분류: 제공되는 숙박업소가 관광호텔, 여관업, 여인숙업, 일반호텔, 숙박업 기타 등 어디에 해당되는지 기재합니다.
+
+        춘천의 숙박업소들을 추천해 주세요.
+        """
+        return prompt
+    
+    # 아무 정보도 없으면 빈 프롬프트 반환 
+    else:
+        return "사용 가능한 정보가 없습니다. 적절한 데이터를 제공해주세요."
 
 # Streamlit 앱 구현
 def main():
@@ -198,17 +305,17 @@ def main():
         st.subheader("📅 추천 일정")
         user_input = st.text_input("검색할 장소를 입력하세요:", placeholder="예: 춘천 식당, 춘천 관광지 ...")
 
-        # 사용자 입력에 따른 추천 일정 생성 
         response_placeholder = st.empty()
 
         # 정규식을 사용하여 사용자 입력 패턴 매칭 
-        if re.search(r"(춘천).*?(식당|맛집)", user_input, re.IGNORECASE) or "식당" in menu:
+        if re.search(r"(춘천).*?(식당|맛집|숙소)", user_input, re.IGNORECASE) or "식당" in menu or "숙소" in menu:
             try:
-                # 공공데이터포털 API 호출하여 맛집 정보 가져오기
+                # 맛집 정보, 숙박업소 정보 가져오기 
                 restaurants = get_restaurant_info()
-                if restaurants:
-                    # 프롬프트 생성 
-                    prompt = generate_prompt(restaurants)
+                accommodations = get_accommodation_info()
+
+                if restaurants or accommodations:
+                    prompt = generate_prompt(restaurants=restaurants, accommodations=accommodations)
 
                     # Ollama 모델 호출 
                     response_stream = ollama.chat(
@@ -227,16 +334,16 @@ def main():
                     for chunk in response_stream:
                         if 'message' in chunk:
                             full_response += chunk['message']['content']
-                            response_placeholder.markdown(full_response)  # 실시간 업데이트
+                            response_placeholder.text(full_response) # 텍스트로 출력 
                     st.success("모델 응답 완료")
                 else:
-                    st.warning("음식점 정보를 가져올 수 없습니다.")
+                    st.warning("정보를 가져올 수 없습니다.")
             except Exception as e:
                 st.error(f"오류가 발생했습니다: {e}")
 
-        elif re.search(r"(춘천).*?(관광지|명소|숙소)", user_input, re.IGNORECASE) or "숙소" in menu or "관광지" in menu:
-            # 관광지 또는 숙소와 관련된 입력 처리
-            st.info("관광지와 숙소 관련 정보를 준비 중입니다.")
+        elif re.search(r"(춘천).*?(관광지)", user_input, re.IGNORECASE) or "관광지" in menu:
+            # 관광지 관련된 입력 처리
+            st.info("관광지 관련 정보를 준비 중입니다.")
         else:
             st.write("chatBot이 일정을 출력해줄겁니다.")
 
