@@ -11,13 +11,13 @@ from datetime import datetime, timedelta
 model_name = "hf.co/MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M"
 
 # 공공데이터포털 API
-PUBLIC_DATA_SERVICE_KEY = "PUBLIC_DATA_SERVICE_KEY"
+PUBLIC_DATA_SERVICE_KEY = "Your Data Service Key"
 
 # Kakao 지도 API를 사용하여 HTML iframe 생성
 KAKAO_API_KEY = "your_kakao_api_key"
 
 # OpenWeather API Key
-OPENWEATHER_API_KEY = "OPENWEATHER_API_KEY"
+OPENWEATHER_API_KEY = "Your Openweather API Key"
 
 # HTML을 렌더링하기 위한 기본 템플릿
 def generate_map_iframe_html(query, width, height):
@@ -34,7 +34,7 @@ def generate_map_iframe_html(query, width, height):
 
 # 날씨 예보를 가져오는 함수
 def get_weather_forecast(city):
-    url = f"http://api.openweathermap.org/data/2.5/forecast?q={city}&appid={OPENWEATHER_API_KEY}&units=metric&lang=kr"
+    url = f"https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={OPENWEATHER_API_KEY}&units=metric&lang=kr"
     response = requests.get(url)
 
     if response.status_code == 200:
@@ -44,7 +44,7 @@ def get_weather_forecast(city):
         current_time = datetime.now()
 
         # 시간 구하기
-        for delta in [0, 12]:  # 0은 현재시간, 3은 +3시간, 6은 +6시간
+        for delta in [0, 12]:  # 0은 현재시간, 6은 +6시간, 12는 +12시간
             forecast_time = current_time + timedelta(hours=delta)
             forecast_data.append({
                 "time": forecast_time.strftime("%H시 %M분"),  
@@ -275,11 +275,19 @@ def main():
     st.markdown(
     """
     <style>
-        /* Sidebar width adjustment */
+        /* Sidebar의 색상 및 크기 조정 */
         [data-testid="stSidebar"] {
+            background-color: #2C3E50;
             min-width: 200px;
             max-width: 300px;  /* Adjust the maximum width */
         }
+        [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
+            color: #FFFFFF; /* 헤더 텍스트 색상 (흰색) */
+        }
+        .stApp {
+            background-color: #FFFFF0; /* 배경 색상 */
+        }
+        
     </style>
     """,
     unsafe_allow_html=True,
@@ -287,13 +295,10 @@ def main():
 
     # 앱 제목 및 설명
     st.title("🗺️ 여행 가이드 챗봇")
-    st.write("검색하고자 하는 장소를 입력하세요. 현재는 **춘천 지역**만 지원합니다.")
+    st.write("검색하고자 하는 장소를 입력하세요. 현재는 **춘천 지역**만 지원합니다")
 
     # 기본 지도 HTML
     map_html = None
-
-    # 레이아웃 설정: 지도, 날씨 예보, 추천 일정
-    col1, col2 = st.columns([5, 3])
 
     # 사이드바
     with st.sidebar:
@@ -301,19 +306,19 @@ def main():
         menu = option_menu(
             menu_title="Menu",  # Title for the menu
             options=["춘천 식당", "춘천 숙소", "춘천 관광지"],  # Menu options
-            icons=["apple", "building", "backpack"],  # Icons for the options
-            default_index=0,  # Default selected option
-            styles={  # Custom styles for the menu
-                "container": {"padding": "5!important", "background-color": "#121212"},
-                "icon": {"color": "orange", "font-size": "25px"},
+            icons=["apple", "building", "backpack"],            # Icons for the options
+            default_index=0,    # Default selected option
+            styles={            # Custom styles for the menu
+                "container": {"padding": "5!important", "background-color": "#AAAAAA"},
+                "icon": {"color": "white", "font-size": "25px"},
                 "nav-link": {
                     "font-size": "16px",
                     "text-align": "left",
                     "margin": "0px",
-                    "--hover-color": "#AAAAFF",
+                    "--hover-color": "#CDCDFD",
                 },
                 "nav-link-selected": {
-                    "background-color": "#A9A9A9",
+                    "background-color": "#2C3E50",
                     },
             },
         )
@@ -321,12 +326,12 @@ def main():
         # Date input for selecting forecast date
         my_date = st.date_input("원하는 날짜를 선택하세요", datetime.now())
 
-    # Map query based on user choice
+    # Map query based on user input
     query = menu
-    map_html = generate_map_iframe_html(query, "100%", "600px")
+    map_html = generate_map_iframe_html(query, "100%", "600")
 
-    # Layout: Columns for map and weather
-    col1, col2 = st.columns([4, 3])
+    # Layout: Columns for map and chatBot
+    col1, col2 = st.columns([6, 4])
 
     # 추천 일정 출력
     with col2:
@@ -366,8 +371,6 @@ def main():
                     call_model(prompt)
                 else:
                     st.warning("관광지 정보를 가져올 수 없습니다.")
-            else:
-                st.write("chatBot이 일정을 출력해줄겁니다.")
 
         except Exception as e:
             st.error(f"오류가 발생했습니다: {e}")
@@ -375,7 +378,7 @@ def main():
     # 지도 및 날씨 정보 출력 (col1)
     with col1:
         if map_html:
-            st.components.v1.html(map_html, height=550, width=820)
+            st.components.v1.html(map_html, height=600)
         else:
             st.info("지도가 여기에 표시됩니다.")
 
