@@ -69,7 +69,7 @@ def main():
         
     st.write("")
 
-    if st.button("메인 페이지로 돌아가기"):
+    if st.button("메인 페이지 시작하기"):
         st.session_state.page = "chatBotApp"
 
 if __name__ == "__main__":
