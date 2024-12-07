@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 KAKAO_API_KEY = "your_kakao_api_key"
 
 # OpenWeather API Key
-OPENWEATHER_API_KEY = "your_openweather_api_key"
+OPENWEATHER_API_KEY = "07d909e7cd98670d2103f1ddfb72c1bc"
 
 
 # HTML을 렌더링하기 위한 기본 템플릿
@@ -36,7 +36,7 @@ def get_weather_forecast(city):
         current_time = datetime.now()
 
         # 시간 구하기
-        for delta in [0, 12]:  # 0은 현재시간, 3은 +3시간, 6은 +6시간
+        for delta in [0, 12]:  # 0은 현재시간, 6은 +6시간, 12는 +12시간
             forecast_time = current_time + timedelta(hours=delta)
             forecast_data.append({
                 "time": forecast_time.strftime("%H시 %M분"),  
@@ -86,8 +86,6 @@ def main():
     # 기본 지도 HTML
     map_html = None
 
-    # 레이아웃 설정: 지도, 날씨 예보, 추천 일정
-    col1, col2 = st.columns([5, 3])
 
     # 사이드바
     with st.sidebar:
@@ -95,9 +93,9 @@ def main():
         menu = option_menu(
             menu_title="Menu",  # Title for the menu
             options=["춘천 식당", "춘천 숙소", "춘천 관광지"],  # Menu options
-            icons=["apple", "building", "backpack"],  # Icons for the options
-            default_index=0,  # Default selected option
-            styles={  # Custom styles for the menu
+            icons=["apple", "building", "backpack"],            # Icons for the options
+            default_index=0,    # Default selected option
+            styles={            # Custom styles for the menu
                 "container": {"padding": "5!important", "background-color": "#121212"},
                 "icon": {"color": "orange", "font-size": "25px"},
                 "nav-link": {
@@ -115,27 +113,21 @@ def main():
         # Date input for selecting forecast date
         my_date = st.date_input("원하는 날짜를 선택하세요", datetime.now())
 
-    # Map query based on user choice
+    # Map query based on user input
     query = menu
-    map_html = generate_map_iframe_html(query, "100%", "600px")
+    map_html = generate_map_iframe_html(query, "100%", "600")
 
-    # Layout: Columns for map and weather
-    col1, col2 = st.columns([4, 3])
+    # Layout: Columns for map and chatBot
+    col1, col2 = st.columns([6, 4])
 
     # 추천 일정 출력 (col2)
     with col2:
         user_input = st.text_input("검색할 장소를 입력하세요:", placeholder="예: 춘천 카페")
-        #if user_input:
-            # if "춘천" in user_input:
-            #     query = user_input
-            #     map_html = generate_map_iframe_html(query, "100%", "600px")
-            # else:
-            #     st.warning("현재는 춘천 지역만 지원합니다. 검색어에 '춘천'을 포함해주세요.")
         st.write("chatBot이 일정을 출력해줄겁니다")
     # 지도 및 날씨 정보 출력 (col1)
     with col1:
         if map_html:
-            st.components.v1.html(map_html, height=550, width=900)
+            st.components.v1.html(map_html, height=600)
         else:
             st.info("지도가 여기에 표시됩니다.")
 
