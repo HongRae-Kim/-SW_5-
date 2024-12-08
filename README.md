@@ -75,9 +75,34 @@ pip install streamlit requests ollama streamlit_option_menu
 
 ### 3. Ollama 모델 설치 
 Ollama 모델은 챗봇의 자연어 처리 기능을 담당하며, 로컬 서버에서 실행되어야 합니다.
-  1. **Ollama 설치**: 
+  1. **Ollama 설치**: [Ollama 공식 웹사이트](https://ollama.com/)에서 운영체제에 맞는 설치 파일을 다운로드하고 설치합니다.
+  2. **Hugging Face에서 모델 다운로드**: Hugging Face에서 원하는 모델을 가져와 Ollama에 통합합니다.
+  - 현재 사용중인 모델은 `MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M` 입니다.
+  3. **모델 실행**: 모델을 로컬 서버에서 실행합니다.
+  ```bash
+  ollama run hf.co/MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M
+  ```
+
 
 ## 🔍 추가 참고 사항 
 - 이 챗봇은 **춘천 지역**에 대한 정보만 지원합니다.
 - **빠른 검색 버튼을** 통해 간편하게 카테고리를 선택하고, 원하는 정보에 바로 접근할 수 있습니다.
-- 여행을 준비할 때 추천되는 **일정**과 **장소**를 통해 더 편리하고 즐거운 여행이 가능해집니다.****
+- 여행을 준비할 때 추천되는 **일정**과 **장소**를 통해 더 편리하고 즐거운 여행이 가능해집니다.
+
+
+## 📄 라이선스 
+이 프로젝트는 MIT 라이선스를 따릅니다.<br>자유롭게 사용, 수정, 배포할 수 있습니다.
+
+## 프로젝트 구조 
+```bash
+SW_5/
+│
+├── streamlit_app.py        # Streamlit 애플리케이션 메인 파일
+├── chatBotApp.py           # 챗봇 관련 모듈
+├── Home.py                 # 홈 페이지 모듈
+├── Subpage.py              # 서브 페이지 모듈
+├── 20241203.png            # 프로젝트 관련 이미지
+├── README.md               # 프로젝트 설명서
+├── LICENSE                 # 라이선스 정보
+├── gitignore.txt           # Git 무시 설정 파일
+└── __pycache__/            # 파이썬 캐시 파일
