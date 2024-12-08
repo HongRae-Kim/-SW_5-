@@ -12,3 +12,6 @@ if st.session_state.page == "Home":
 elif st.session_state.page == "chatBotApp":
     import chatBotApp
     chatBotApp.main()
+elif st.session_state.page == "Subpage":
+    import Subpage
+    Subpage.main()
