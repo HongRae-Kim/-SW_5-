@@ -7,6 +7,25 @@ from streamlit_option_menu import option_menu
 from urllib.parse import quote
 from datetime import datetime, timedelta
 
+st.set_page_config(layout="wide",page_title="여행가이드챗봇",page_icon="🗺️")
+
+def add_bg_from_url(image_url, background_color="#b7c1c6"):
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: url("{image_url}");
+            background-attachment: fixed;
+            background-size: contain; /* 이미지 잘리지 않도록 설정 */
+            background-position: center; /* 이미지 중앙 정렬 */
+            background-repeat: no-repeat; /* 이미지 반복 금지 */
+            background-color: {background_color}; /* 여백 색상 설정 */
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
 # 모델 이름, Ollama 로컬 서버 실행되고 있어야 함
 model_name = "hf.co/MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M"
 
@@ -270,8 +289,8 @@ def generate_prompt(restaurants=None, accommodations=None, tourist=None):
 
 # Streamlit 앱 구현
 def main():
+    add_bg_from_url("https://i.imgur.com/5hwglBj.png", background_color="#b7c1c6")
     # 화면 너비 설정
-    st.set_page_config(layout="wide")
     st.markdown(
     """
     <style>
@@ -284,14 +303,11 @@ def main():
         [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
             color: #FFFFFF; /* 헤더 텍스트 색상 (흰색) */
         }
-        .stApp {
-            background-color: #FFFFF0; /* 배경 색상 */
-        }
         
     </style>
     """,
     unsafe_allow_html=True,
-)
+    )
 
     # 앱 제목 및 설명
     st.title("🗺️ 여행 가이드 챗봇")
@@ -403,6 +419,7 @@ def main():
                 st.write("------")
         else:
             st.error("날씨 정보를 가져올 수 없습니다.")
+
 
 # 메인 실행
 if __name__ == "__main__":
