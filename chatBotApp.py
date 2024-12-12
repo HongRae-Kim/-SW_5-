@@ -7,39 +7,40 @@ from streamlit_option_menu import option_menu
 from urllib.parse import quote
 from datetime import datetime, timedelta
 
-st.set_page_config(layout="wide",page_title="여행가이드챗봇",page_icon="🗺️")
+st.set_page_config(layout="wide", page_title="여행가이드챗봇", page_icon="🗺️")
 
-def add_bg_from_url(image_url, background_color="#b7c1c6"):
+def add_bg_from_url(
+    image_url, 
+    background_color="#b7c1c6", 
+    background_position="center", 
+    background_repeat="no-repeat"
+):
     st.markdown(
         f"""
         <style>
         .stApp {{
-            background-image: url("{image_url}");
+            background: {background_color} url("{image_url}");
             background-attachment: fixed;
-            background-size: contain; /* 이미지 잘리지 않도록 설정 */
-            background-position: center; /* 이미지 중앙 정렬 */
-            background-repeat: no-repeat; /* 이미지 반복 금지 */
-            background-color: {background_color}; /* 여백 색상 설정 */
+            background-position: {background_position};
+            background-repeat: {background_repeat};
+            background-size: cover;
+            /* 배경 이미지 위에 반투명 오버레이를 깔아 텍스트 가독성 향상 */
+            background-blend-mode: overlay;
+            background-color: {background_color};
         }}
         </style>
         """,
         unsafe_allow_html=True
     )
 
-# 모델 이름, Ollama 로컬 서버 실행되고 있어야 함
 model_name = "hf.co/MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M"
 
-# 공공데이터포털 API
-PUBLIC_DATA_SERVICE_KEY = "Your Data Service Key"
+PUBLIC_DATA_SERVICE_KEY = "acV+BKrGo2bkYzStq90pG+G1uma95W5/awstYhpC/y2GRwoRj7Hj5ZFArwD5ZHqaaYzFtlIYNB6XC0DM6+anxA=="
+KAKAO_API_KEY = "8718fcfe61913308c50d0e5974a0a68f"
+OPENWEATHER_API_KEY = "ed8a40d22e5db3f3ee51b6a0dcdf6d42"
 
-# Kakao 지도 API를 사용하여 HTML iframe 생성
-KAKAO_API_KEY = "your_kakao_api_key"
-
-# OpenWeather API Key
-OPENWEATHER_API_KEY = "Your Openweather API Key"
-
-# HTML을 렌더링하기 위한 기본 템플릿
 def generate_map_iframe_html(query, width, height):
+    # Kakao 지도를 iframe 형태로 표시하기 위한 HTML 생성 함수
     encoded_query = quote(query)
     return f"""
     <iframe
@@ -51,30 +52,29 @@ def generate_map_iframe_html(query, width, height):
     </iframe>
     """
 
-# 날씨 예보를 가져오는 함수
 def get_weather_forecast(city):
+    # OpenWeather API를 이용해 날씨 예보 정보를 가져오는 함수
     url = f"https://api.openweathermap.org/data/2.5/forecast?q={city}&appid={OPENWEATHER_API_KEY}&units=metric&lang=kr"
     response = requests.get(url)
 
     if response.status_code == 200:
         data = response.json()
         forecast_data = []
-
         current_time = datetime.now()
 
-        # 시간 구하기
-        for delta in [0, 12]:  # 0은 현재시간, 6은 +6시간, 12는 +12시간
+        # 현재 시간과 12시간 후 예보 정보 추출
+        for delta in [0, 12]:
             forecast_time = current_time + timedelta(hours=delta)
             forecast_data.append({
-                "time": forecast_time.strftime("%H시 %M분"),  
+                "time": forecast_time.strftime("%H시 %M분"),
                 "temp": data['list'][delta]['main']['temp'],
                 "description": data['list'][delta]['weather'][0]['description'],
-                "weekday": forecast_time.strftime("%A"),  
-                "temp_min": data['list'][delta]['main']['temp_min'],  
-                "temp_max": data['list'][delta]['main']['temp_max'],  
+                "weekday": forecast_time.strftime("%A"),
+                "temp_min": data['list'][delta]['main']['temp_min'],
+                "temp_max": data['list'][delta]['main']['temp_max'],
             })
 
-        # 각 요일별로 최저 및 최고 기온을 구하기
+        # 일별 최저/최고 기온 계산
         daily_min_max = {}
         for forecast in data['list']:
             date = datetime.fromtimestamp(forecast['dt']).strftime('%Y-%m-%d')
@@ -90,13 +90,11 @@ def get_weather_forecast(city):
     else:
         return None, None
 
-# 공공데이터포털 API 호출하여 맛집 정보를 가져오는 함수
 def get_restaurant_info():
-    base_url = "BASE_URL"
-    endpoint = "ENDPOINT"
+    # 공공데이터포털 API에서 맛집 정보를 가져오는 함수
+    base_url = "https://api.odcloud.kr/api"
+    endpoint = "/15050522/v1/uddi:3e709331-acba-4c95-a69a-8845740626d6"
     url = f"{base_url}{endpoint}"
-
-    # 파라미터 설정
     params = {
         "page": 1,
         "perPage": 10,
@@ -104,11 +102,9 @@ def get_restaurant_info():
         "serviceKey": PUBLIC_DATA_SERVICE_KEY 
     }
     response = requests.get(url, params=params)
-
     if response.status_code == 200:
         response_data = response.json()
         restaurant_list = []
-
         for item in response_data.get("data", []):
             restaurant_info = {
                 "업소명": item.get("업소명"),
@@ -117,32 +113,27 @@ def get_restaurant_info():
                 "추천메뉴": item.get("주된음식")
             }
             restaurant_list.append(restaurant_info)
-
-        return random.sample(restaurant_list, min(4, len(restaurant_list)))
-    
+        # 최대 3개까지 랜덤 추천
+        return random.sample(restaurant_list, min(3, len(restaurant_list)))
     else:
         st.error(f"API 요청에 실패했습니다: 상태 코드 {response.status_code}")
         return None
-    
-# 공공데이터포털 API 호출하여 숙박업소 정보를 가져오는 함수
-def get_accommodation_info():
-    base_url = "BASE_URL"
-    endpoint = "ENDPOINT"
-    url = f"{base_url}{endpoint}"
 
+# 공공데이터포털 API에서 숙박업소 정보를 가져오는 함수
+def get_accommodation_info():
+    base_url = "https://api.odcloud.kr/api"
+    endpoint = "/3036290/v1/uddi:2928fb68-349b-4488-b074-d545bff65072"
+    url = f"{base_url}{endpoint}"
     params = {
         "page": 1,
         "perPage": 10,
         "returnType": "JSON",
         "serviceKey": PUBLIC_DATA_SERVICE_KEY  
     }
-
     response = requests.get(url, params=params)
-
     if response.status_code == 200:
         response_data = response.json()
         accommodation_list = []
-
         for item in response_data.get("data", []):
             accommodation_info = {
                 "업소명": item.get("업소명"),
@@ -150,26 +141,22 @@ def get_accommodation_info():
                 "업태": item.get("업태"),
             }
             accommodation_list.append(accommodation_info)
-
-        return random.sample(accommodation_list, min(4, len(accommodation_list)))
-    
+        return random.sample(accommodation_list, min(3, len(accommodation_list)))
     else:
         st.error(f"API 요청에 실패했습니다: 상태 코드 {response.status_code}")
         return None
 
-# 공공데이터포털 API 호출하여 관광지 정보를 가져오는 함수
+# 공공데이터포털 API에서 테마 관광지 정보를 가져오는 함수
 def get_thematic_tour_info():
-    base_url = "BASE_URL"
-    endpoint = "ENDPOINT"
+    base_url = "https://api.odcloud.kr/api"
+    endpoint = "/15103358/v1/uddi:2c258f70-483e-40da-80f9-8103d8f9e239"
     url = f"{base_url}{endpoint}"
-
     params = {
         "pageNo": 1,
         "perPage": 10,
         "returnType": "JSON",
         "serviceKey": PUBLIC_DATA_SERVICE_KEY 
     }
-
     try:
         response = requests.get(url, params=params)
         response.raise_for_status()
@@ -177,7 +164,6 @@ def get_thematic_tour_info():
         if response.status_code == 200:
             response_data = response.json()
             tour_list = []
-
             for item in response_data.get("data", []):
                 tour_info = {
                     "테마": item.get("테마"),
@@ -185,11 +171,8 @@ def get_thematic_tour_info():
                     "코스정보": item.get("코스정보"),
                 }
                 tour_list.append(tour_info)
-
             selected_tours = random.sample(tour_list, min(1, len(tour_list)))
-
             return selected_tours
-        
         else:
             print(f"API 요청에 실패했습니다: 상태 코드 {response.status_code}")
             return None 
@@ -198,9 +181,8 @@ def get_thematic_tour_info():
         print(f"API 요청 오류 발생: {err}") 
         return None
 
-def call_model(prompt):
+def call_model(prompt, placeholder):
     try:
-        # Ollama 모델 호출 
         response_stream = ollama.chat(
             model=model_name,
             messages=[
@@ -209,122 +191,123 @@ def call_model(prompt):
                     "content": prompt,
                 },
             ],
-            stream=True  # 스트리밍 활성화
+            stream=True
         )
-
-        # 스트리밍된 응답을 받아서 실시간으로 업데이트
         full_response = ""
-        response_placeholder = st.empty()  # 이 부분에서 Streamlit에 출력할 빈 공간을 준비
         for chunk in response_stream:
             if 'message' in chunk:
                 full_response += chunk['message']['content']
-                response_placeholder.text(full_response)  # 실시간 업데이트
+                placeholder.markdown(full_response)
         st.success("모델 응답 완료")
     except Exception as e:
-        st.error(f"모델 호출 오류가 발생했습니다: {e}")       
+        st.error(f"모델 호출 오류가 발생했습니다: {e}")
 
-
-def generate_prompt(restaurants=None, accommodations=None, tourist=None):
+# 모델에게 전달할 프롬프트를 생성하는 함수
+def generate_prompt(restaurants=None, accommodations=None, tourist=None, weather_summary=None, map_query=None):
     api_result = ""
 
-    # 맛집 정보가 있는 경우 프롬프트에 맛집 정보만 포함
     if restaurants:
         api_result += "\n[맛집 정보]\n"
         for res in restaurants:
             api_result += f"업소명: {res['업소명']}, 위치: {res['소재지']}, 음식 유형: {res['음식의유형']}, 추천 메뉴: {res['추천메뉴']}\n"
-        
+
+        if weather_summary:
+            api_result += f"\n[날씨 정보]\n{weather_summary}\n"
+        if map_query:
+            api_result += f"\n[지도 정보]\n해당 지역 지도 검색: {map_query}\n"
+
         prompt = f"""
         다음은 춘천의 인기 맛집에 대한 정보입니다. {api_result}
-        위 내용을 사용하여 당신은 춘천 맛집 가이드에 대한 정보를 사용자에게 소개해야 합니다.
+        위 내용을 사용하여 당신은 춘천 맛집 가이드에 대한 정보를 사용자에게 소개하세요.
 
         예시:
-        1. 맛집 이름: 방문할 맛집을 기재합니다.
-        2. 위치: 장소를 방문할 적절한 시간을 제시합니다.
-        3. 음식 유형: 해당 음식의 종류를 간단하게 설명해주세요.
-        4. 추천 메뉴: 추천하는 메뉴를 설명해주세요.
+        1. 맛집 이름: 방문할 맛집을 기재.
+        2. 위치: 장소 위치를 간단히 설명.
+        3. 음식 유형: 음식 종류를 간단히 설명.
+        4. 추천 메뉴: 추천하는 메뉴를 설명.
 
-        춘천의 유명한 맛집들을 위치와 추천 메뉴를 고려하여 추천해주세요.
+        날씨 정보와 지도 정보를 참고하여, 춘천의 유명한 맛집들을 위치와 추천 메뉴를 고려하여 추천해주세요.
         """
         return prompt
 
-    # 숙박업소 정보가 있는 경우 프롬프트에 숙박업소 정보만 포함
     elif accommodations:
         api_result += "\n[숙박업소 정보]\n"
         for acc in accommodations:
             api_result += f"업소명: {acc['업소명']}, 위치: {acc['소재지']}, 업태: {acc['업태']}\n"
-        
+
+        if weather_summary:
+            api_result += f"\n[날씨 정보]\n{weather_summary}\n"
+        if map_query:
+            api_result += f"\n[지도 정보]\n해당 지역 지도 검색: {map_query}\n"
+
         prompt = f"""
         다음은 춘천의 인기 숙박업소에 대한 정보입니다. {api_result}
-        위 내용을 사용하여 당신은 춘천 여행 가이드에서 숙박에 대한 정보를 사용자에게 소개해야 합니다.
+        위 내용을 사용하여 당신은 춘천 여행 가이드에서 숙박 정보를 사용자에게 소개하세요.
 
         예시:
-        1. 숙박업소 이름: 숙박할 수 있는 업소명을 기재합니다.
-        2. 위치: 숙소 위치를 설명합니다.
-        3. 분류: 제공되는 숙박업소가 관광호텔, 여관업, 여인숙업, 일반호텔, 숙박업 기타 등 어디에 해당되는지 기재합니다.
+        1. 숙박업소 이름: 숙박업소명 기재.
+        2. 위치: 숙소 위치를 간단히 설명.
+        3. 업태: 관광호텔, 여관업, 여인숙업, 일반호텔, 숙박업 기타 등 분류 기재.
 
-        춘천의 숙박업소들을 추천해 주세요.
+        날씨 정보와 지도 정보를 참고하여, 춘천의 숙박업소들을 추천해주세요.
         """
         return prompt
 
     elif tourist:
         api_result += "\n[관광지 정보]\n"
         for tour in tourist:
-            api_result += f"테마 {tour['테마']}, 요약: {tour['요약']}, 코스정보: {tour['코스정보']}\n"
-            
+            api_result += f"테마: {tour['테마']}, 요약: {tour['요약']}, 코스정보: {tour['코스정보']}\n"
+
+        if weather_summary:
+            api_result += f"\n[날씨 정보]\n{weather_summary}\n"
+        if map_query:
+            api_result += f"\n[지도 정보]\n해당 지역 지도 검색: {map_query}\n"
+
         prompt = f"""
         다음은 춘천의 관광지에 대한 정보입니다. {api_result}
-        위 내용을 사용하여 당신은 춘천 관광 가이드에 대한 정보를 사용자에게 소개해야 합니다.
+        위 내용을 사용하여 당신은 춘천 관광 가이드에 대한 정보를 사용자에게 소개하세요.
 
         예시:
-        1. 코스정보: 간단하게 정보를 소개합니다.
-        2. 소개: 제공되는 코스정보에 대해서 소개합니다.
-        3. 추천: 누구와 함께 즐겨야하는지에 대한 정보를 기재합니다.
+        1. 코스정보: 코스 개요를 간단히 설명.
+        2. 소개: 코스 관련 특징을 설명.
+        3. 추천: 누구와 함께 즐기면 좋을지 설명.
 
-        춘천의 유명한 관광지를 추천해 주세요.
+        날씨 정보와 지도 정보를 참고하여, 춘천의 유명한 관광지를 추천해주세요.
         """
         return prompt
 
     else:
-        return "사용 가능한 정보가 없습니다. 적절한 데이터를 제공해주세요."
+        return "사용 가능한 정보가 없습니다."
 
-# Streamlit 앱 구현
 def main():
     add_bg_from_url("https://i.imgur.com/5hwglBj.png", background_color="#b7c1c6")
-    # 화면 너비 설정
     st.markdown(
     """
     <style>
-        /* Sidebar의 색상 및 크기 조정 */
         [data-testid="stSidebar"] {
             background-color: #2C3E50;
             min-width: 200px;
-            max-width: 300px;  /* Adjust the maximum width */
+            max-width: 300px;
         }
         [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
-            color: #FFFFFF; /* 헤더 텍스트 색상 (흰색) */
+            color: #FFFFFF;
         }
-        
     </style>
     """,
     unsafe_allow_html=True,
     )
 
-    # 앱 제목 및 설명
     st.title("🗺️ 여행 가이드 챗봇")
     st.write("검색하고자 하는 장소를 입력하세요. 현재는 **춘천 지역**만 지원합니다")
 
-    # 기본 지도 HTML
-    map_html = None
-
-    # 사이드바
     with st.sidebar:
         st.header("🔍 빠른 탐색")
         menu = option_menu(
-            menu_title="Menu",  # Title for the menu
-            options=["춘천 식당", "춘천 숙소", "춘천 관광지"],  # Menu options
-            icons=["apple", "building", "backpack"],            # Icons for the options
-            default_index=0,    # Default selected option
-            styles={            # Custom styles for the menu
+            menu_title="Menu",
+            options=["춘천 식당", "춘천 숙소", "춘천 관광지"],
+            icons=["apple", "building", "backpack"],
+            default_index=0,
+            styles={
                 "container": {"padding": "5!important", "background-color": "#AAAAAA"},
                 "icon": {"color": "white", "font-size": "25px"},
                 "nav-link": {
@@ -335,76 +318,76 @@ def main():
                 },
                 "nav-link-selected": {
                     "background-color": "#2C3E50",
-                    },
+                },
             },
         )
 
-        # Date input for selecting forecast date
         my_date = st.date_input("원하는 날짜를 선택하세요", datetime.now())
 
-    # Map query based on user input
-    query = menu
-    map_html = generate_map_iframe_html(query, "100%", "600")
+    # 사용자 입력을 받아 처리
+    user_input = st.text_input("검색할 장소를 입력하세요:", placeholder="예: 춘천 식당, 춘천 관광지 ...")
 
-    # Layout: Columns for map and chatBot
-    col1, col2 = st.columns([6, 4])
+    # 지도 표시를 위한 검색어 결정
+    map_query = user_input if user_input else menu
 
-    # 추천 일정 출력
-    with col2:
+    # 날씨 정보 가져오기
+    forecast_data, daily_min_max = get_weather_forecast("Chuncheon")
+
+    # 날씨 요약 문자열 생성
+    weather_summary = ""
+    if forecast_data:
+        current_weather = forecast_data[0]
+        weather_summary = f"현재시간({current_weather['time']}) 기준 온도: {current_weather['temp']}°C, 날씨: {current_weather['description']}입니다."
+
+    restaurants, accommodations, tourist = None, None, None
+
+    col1, col2 = st.columns([4, 6])
+
+    with col1:
         st.subheader("📅 추천 일정")
-        user_input = st.text_input("검색할 장소를 입력하세요:", placeholder="예: 춘천 식당, 춘천 관광지 ...")
+        response_placeholder = st.empty() # 사용자 입력에 따른 추천 일정 생성 
 
-        # 사용자 입력에 따른 추천 일정 생성 
-        response_placeholder = st.empty()
-
-        # 정규식을 사용하여 사용자 입력 패턴 매칭 
         try:
-            #  "식당" 또는 "맛집"과 관련된 검색을 했을 때
+            # 맛집 검색
             if re.search(r"(춘천).*?(식당|맛집)", user_input, re.IGNORECASE) or "식당" in menu:
-                # 맛집 정보 가져오기
                 restaurants = get_restaurant_info()
                 if restaurants:
-                    prompt = generate_prompt(restaurants=restaurants)
-                    call_model(prompt)
-                else:
-                    st.warning("맛집 정보를 가져올 수 없습니다.")
+                    prompt = generate_prompt(restaurants=restaurants, weather_summary=weather_summary, map_query=map_query)
+                    with st.spinner("모델 응답 생성중..."):
+                        call_model(prompt, response_placeholder)
 
-            # "숙소"와 관련된 검색을 했을 때
+            # 숙소 검색
             elif re.search(r"(춘천).*?(숙소)", user_input, re.IGNORECASE) or "숙소" in menu:
-                # 숙소 정보 가져오기
                 accommodations = get_accommodation_info()
                 if accommodations:
-                    prompt = generate_prompt(accommodations=accommodations)
-                    call_model(prompt)
-                else:
-                    st.warning("숙소 정보를 가져올 수 없습니다.")
+                    prompt = generate_prompt(accommodations=accommodations, weather_summary=weather_summary, map_query=map_query)
+                    with st.spinner("모델 응답 생성중..."):
+                        call_model(prompt, response_placeholder)
 
-            # "관광지"와 관련된 검색을 했을 때
+            # 관광지 검색
             elif re.search(r"(춘천).*?(관광지)", user_input, re.IGNORECASE) or "관광지" in menu:
                 tourist = get_thematic_tour_info()
                 if tourist:
-                    prompt = generate_prompt(tourist=tourist)
-                    call_model(prompt)
-                else:
-                    st.warning("관광지 정보를 가져올 수 없습니다.")
+                    prompt = generate_prompt(tourist=tourist, weather_summary=weather_summary, map_query=map_query)
+                    with st.spinner("모델 응답 생성중..."):
+                        call_model(prompt, response_placeholder)
 
         except Exception as e:
             st.error(f"오류가 발생했습니다: {e}")
 
-    # 지도 및 날씨 정보 출력 (col1)
-    with col1:
+    # 지도 및 날씨 정보 출력 (col2)
+    with col2:
+        map_html = generate_map_iframe_html(map_query, "100%", "600")
         if map_html:
             st.components.v1.html(map_html, height=600)
         else:
             st.info("지도가 여기에 표시됩니다.")
 
-        # 날씨 정보 출력
-        forecast_data, daily_min_max = get_weather_forecast("Chuncheon")
+        # 날씨 정보 표시
         if forecast_data:
             st.subheader("☀️ 춘천 날씨 예보")
             for i, forecast in enumerate(forecast_data):
-                # 두 컬럼으로 나누기
-                left_col, right_col = st.columns([1, 1])  # 두 컬럼으로 나눔
+                left_col, right_col = st.columns([1, 1])  
                 with left_col: # 현재 시간을 기준으로 시간, 온도, 날씨 출력(left_col)
                     st.write(f"🕓시간: {forecast['time']}")
                     st.write(f"🌡️온도: {forecast['temp']}°C")
@@ -421,6 +404,5 @@ def main():
             st.error("날씨 정보를 가져올 수 없습니다.")
 
 
-# 메인 실행
 if __name__ == "__main__":
     main()
