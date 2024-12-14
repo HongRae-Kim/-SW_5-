@@ -6,37 +6,38 @@ import random
 from streamlit_option_menu import option_menu
 from urllib.parse import quote
 from datetime import datetime, timedelta
-
+#
 st.set_page_config(layout="wide",page_title="여행가이드챗봇",page_icon="🗺️")
 
-def add_bg_from_url(image_url, background_color="#b7c1c6"):
-    st.markdown(
-        f"""
-        <style>
-        .stApp {{
-            background-image: url("{image_url}");
-            background-attachment: fixed;
-            background-size: contain; /* 이미지 잘리지 않도록 설정 */
-            background-position: center; /* 이미지 중앙 정렬 */
-            background-repeat: no-repeat; /* 이미지 반복 금지 */
-            background-color: {background_color}; /* 여백 색상 설정 */
-        }}
-        </style>
-        """,
-        unsafe_allow_html=True
-    )
+# 배경 이미지 설정
+# def add_bg_from_url(image_url, background_color="#b7c1c6"):
+#     st.markdown(
+#         f"""
+#         <style>
+#         .stApp {{
+#             background-image: url("{image_url}");
+#             background-attachment: fixed;
+#             background-size: contain; /* 이미지 잘리지 않도록 설정 */
+#             background-position: center; /* 이미지 중앙 정렬 */
+#             background-repeat: no-repeat; /* 이미지 반복 금지 */
+#             background-color: {background_color}; /* 여백 색상 설정 */
+#         }}
+#         </style>
+#         """,
+#         unsafe_allow_html=True
+#     )
 
 # 모델 이름, Ollama 로컬 서버 실행되고 있어야 함
 model_name = "hf.co/MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M"
 
 # 공공데이터포털 API
-PUBLIC_DATA_SERVICE_KEY = "Your Data Service Key"
+PUBLIC_DATA_SERVICE_KEY = "acV+BKrGo2bkYzStq90pG+G1uma95W5/awstYhpC/y2GRwoRj7Hj5ZFArwD5ZHqaaYzFtlIYNB6XC0DM6+anxA=="
 
 # Kakao 지도 API를 사용하여 HTML iframe 생성
 KAKAO_API_KEY = "your_kakao_api_key"
 
 # OpenWeather API Key
-OPENWEATHER_API_KEY = "Your Openweather API Key"
+OPENWEATHER_API_KEY = "07d909e7cd98670d2103f1ddfb72c1bc"
 
 # HTML을 렌더링하기 위한 기본 템플릿
 def generate_map_iframe_html(query, width, height):
@@ -92,8 +93,8 @@ def get_weather_forecast(city):
 
 # 공공데이터포털 API 호출하여 맛집 정보를 가져오는 함수
 def get_restaurant_info():
-    base_url = "BASE_URL"
-    endpoint = "ENDPOINT"
+    base_url = "https://api.odcloud.kr/api"
+    endpoint = "/15050522/v1/uddi:4c4692a3-f748-48b1-bb47-9c121b60445f"
     url = f"{base_url}{endpoint}"
 
     # 파라미터 설정
@@ -101,7 +102,7 @@ def get_restaurant_info():
         "page": 1,
         "perPage": 10,
         "returnType": "JSON",
-        "serviceKey": PUBLIC_DATA_SERVICE_KEY 
+        "serviceKey": PUBLIC_DATA_SERVICE_KEY
     }
     response = requests.get(url, params=params)
 
@@ -126,8 +127,8 @@ def get_restaurant_info():
     
 # 공공데이터포털 API 호출하여 숙박업소 정보를 가져오는 함수
 def get_accommodation_info():
-    base_url = "BASE_URL"
-    endpoint = "ENDPOINT"
+    base_url = "https://api.odcloud.kr/api"
+    endpoint = "/15050522/v1/uddi:4c4692a3-f748-48b1-bb47-9c121b60445f"
     url = f"{base_url}{endpoint}"
 
     params = {
@@ -159,8 +160,8 @@ def get_accommodation_info():
 
 # 공공데이터포털 API 호출하여 관광지 정보를 가져오는 함수
 def get_thematic_tour_info():
-    base_url = "BASE_URL"
-    endpoint = "ENDPOINT"
+    base_url = "https://api.odcloud.kr/api"
+    endpoint = "/15050522/v1/uddi:4c4692a3-f748-48b1-bb47-9c121b60445f"
     url = f"{base_url}{endpoint}"
 
     params = {
@@ -289,25 +290,22 @@ def generate_prompt(restaurants=None, accommodations=None, tourist=None):
 
 # Streamlit 앱 구현
 def main():
-    add_bg_from_url("https://i.imgur.com/5hwglBj.png", background_color="#b7c1c6")
-    # 화면 너비 설정
+    #add_bg_from_url("https://i.imgur.com/5hwglBj.png", background_color="#b7c1c6")
     st.markdown(
     """
     <style>
-        /* Sidebar의 색상 및 크기 조정 */
+        /* 사이드바의 색상 및 텍스트 스타일 */
         [data-testid="stSidebar"] {
             background-color: #2C3E50;
             min-width: 200px;
-            max-width: 300px;  /* Adjust the maximum width */
+            max-width: 300px;
         }
         [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3 {
-            color: #FFFFFF; /* 헤더 텍스트 색상 (흰색) */
+            color: #FFFFFF;  /* 사이드바 텍스트 색상 (흰색) */
         }
-        
     </style>
-    """,
-    unsafe_allow_html=True,
-    )
+    """, unsafe_allow_html=True
+)
 
     # 앱 제목 및 설명
     st.title("🗺️ 여행 가이드 챗봇")
@@ -326,7 +324,7 @@ def main():
             default_index=0,    # Default selected option
             styles={            # Custom styles for the menu
                 "container": {"padding": "5!important", "background-color": "#AAAAAA"},
-                "icon": {"color": "white", "font-size": "25px"},
+                "icon": {"color": "#DCFFFE", "font-size": "25px"},
                 "nav-link": {
                     "font-size": "16px",
                     "text-align": "left",
@@ -347,7 +345,7 @@ def main():
     map_html = generate_map_iframe_html(query, "100%", "600")
 
     # Layout: Columns for map and chatBot
-    col1, col2 = st.columns([6, 4])
+    col1, col2 = st.columns([6, 5])
 
     # 추천 일정 출력
     with col2:

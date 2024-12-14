@@ -1,5 +1,7 @@
 import streamlit as st
 
+st.set_page_config(layout="wide")
+
 def main():
     st.title("여행 가이드 챗봇")
     st.write("### 여행의 동반자")
