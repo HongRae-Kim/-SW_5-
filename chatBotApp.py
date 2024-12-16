@@ -31,13 +31,13 @@ st.set_page_config(layout="wide",page_title="여행가이드챗봇",page_icon="�
 model_name = "hf.co/MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M"
 
 # 공공데이터포털 API
-PUBLIC_DATA_SERVICE_KEY = "acV+BKrGo2bkYzStq90pG+G1uma95W5/awstYhpC/y2GRwoRj7Hj5ZFArwD5ZHqaaYzFtlIYNB6XC0DM6+anxA=="
+PUBLIC_DATA_SERVICE_KEY = "API_KEY"
 
 # Kakao 지도 API를 사용하여 HTML iframe 생성
 KAKAO_API_KEY = "your_kakao_api_key"
 
 # OpenWeather API Key
-OPENWEATHER_API_KEY = "07d909e7cd98670d2103f1ddfb72c1bc"
+OPENWEATHER_API_KEY = "API_KEY"
 
 # HTML을 렌더링하기 위한 기본 템플릿
 def generate_map_iframe_html(query, width, height):
