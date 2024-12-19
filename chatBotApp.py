@@ -35,9 +35,9 @@ def add_bg_from_url(
 
 model_name = "hf.co/MLP-KTLim/llama-3-Korean-Bllossom-8B-gguf-Q4_K_M"
 
-PUBLIC_DATA_SERVICE_KEY = "acV+BKrGo2bkYzStq90pG+G1uma95W5/awstYhpC/y2GRwoRj7Hj5ZFArwD5ZHqaaYzFtlIYNB6XC0DM6+anxA=="
-KAKAO_API_KEY = "8718fcfe61913308c50d0e5974a0a68f"
-OPENWEATHER_API_KEY = "ed8a40d22e5db3f3ee51b6a0dcdf6d42"
+PUBLIC_DATA_SERVICE_KEY = "Your Data Service Key"
+KAKAO_API_KEY = "your_kakao_api_key"
+OPENWEATHER_API_KEY = "Your Openweather API Key"
 
 def generate_map_iframe_html(query, width, height):
     # Kakao 지도를 iframe 형태로 표시하기 위한 HTML 생성 함수
